@@ -1,0 +1,1 @@
+Calculation of the probability of death of covenant grogs.
