@@ -4,6 +4,7 @@ from handlers import commands_handler
 from create_bot import dp
 from aiogram import types
 
+
 def sql_start():
     global base, cur
     base = sq.connect('spells.db')
@@ -13,12 +14,12 @@ def sql_start():
 
 
 async def sql_select_spell(message, search_text):
-    if len(search_text) > 0:
-        request = "SELECT * FROM spellindexbytechnique WHERE NAME LIKE \'%%%s%%\'"%(search_text)
+    search_text = "%" + search_text + "%"
+    if len(search_text) > 2:
+        request = "SELECT * FROM spellindexbytechnique WHERE NAME LIKE '%s'"%(search_text)
         print(request)
-        result=[]
         flag = 1
-        for r in cur.execute(request).fetchall():
+        for r in cur.execute("SELECT * FROM spellindexbytechnique WHERE NAME LIKE  ? ", (search_text,)).fetchall():
             r_str=''
             for i in r:
                 if len(str(i)) >0: r_str += ' ' + str(i)
@@ -46,7 +47,7 @@ async def sql_select_base(message, search_base):
         request = "SELECT Base FROM TechForm WHERE Tech = \'%s\' and Form = \'%s\' and level = %s"%(tech, form, level)
         print(request)
         flag = 1
-        for r in cur.execute(request).fetchall():
+        for r in cur.execute("SELECT Base FROM TechForm WHERE Tech = ? and Form = ? and level = ?", (tech, form, level)).fetchall():
             r_str=''
             for i in r:
                 if len(str(i)) >0: r_str += ' ' + str(i)
