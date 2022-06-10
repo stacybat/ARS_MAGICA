@@ -17,11 +17,18 @@ async def sql_select_spell(message, search_text):
         request = "SELECT * FROM spellindexbytechnique WHERE NAME LIKE \'%%%s%%\'"%(search_text)
         print(request)
         result=[]
+        flag = 1
         for r in cur.execute(request).fetchall():
             r_str=''
             for i in r:
                 if len(str(i)) >0: r_str += ' ' + str(i)
-            await message.reply(r_str) 
+            if r_str != '':
+                await message.reply(r_str)
+                flag = 0
+        if flag:
+            await message.reply('Nothing found for your request')
+    else:
+        await message.reply('You did not enter a search term')
 
 
 async def sql_select_base(message, search_base):
@@ -38,10 +45,22 @@ async def sql_select_base(message, search_base):
     if tech !='' and form !='':
         request = "SELECT Base FROM TechForm WHERE Tech = \'%s\' and Form = \'%s\' and level = %s"%(tech, form, level)
         print(request)
+        flag = 1
         for r in cur.execute(request).fetchall():
             r_str=''
             for i in r:
                 if len(str(i)) >0: r_str += ' ' + str(i)
-            await message.reply(r_str) 
-
+            if r_str != '':
+                await message.reply(r_str)
+                flag = 0
+        if flag:
+            await message.reply('Nothing found for your request')
+    else:
+        request = "SELECT Contumeliam FROM Contumeliam_csv  ORDER BY RANDOM() LIMIT 1"
+        for r in cur.execute(request).fetchall():
+            r_str=''
+            for i in r:
+                r_str += ' ' + str(i)
+            await message.reply(r_str)
+        
 

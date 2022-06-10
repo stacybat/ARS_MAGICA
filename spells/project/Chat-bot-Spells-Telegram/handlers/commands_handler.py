@@ -9,7 +9,15 @@ async def command_start(message: types.Message):
 
     
 async def command_help(message: types.Message):
-    await message.reply('If you want to search a spell, enter /fs *search_word*\n If you want to search for a base, enter /fb Tech. Form Level')
+    await message.reply('''***Looking for a spell***
+If you want to search a spell, enter /fs *search_word*
+    e.g.: /fs pilum\n
+***Looking for a base***
+If you want to search for a base, enter /fb *Tech.* *Form* *Level*
+    e.g.: /fb Cr Me 40
+If you want to find the general base, you can enter level 0 or do not enter the level
+    e.g.: /fb an re 0
+    e.g.: /fb Mu Au''')
 
   
 async def input_search_spell(message: types.Message):
