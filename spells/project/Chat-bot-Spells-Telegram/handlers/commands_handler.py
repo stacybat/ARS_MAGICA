@@ -11,8 +11,14 @@ async def command_start(message: types.Message):
     
 async def command_help(message: types.Message):
     await message.reply('''***Find a spell***
-If you want to find a spell, enter /fs *search_word*
-    e.g.: /fs pilum\n
+If you want to find a spell by the keywords, enter /fs *search_word*
+    e.g.: /fs pilum
+If you want to find a spell by the keywords with technique and/or form then type /fs *search_word* t:*Tech.* f:*Form*
+    e.g.: /fs spell t:Re
+    e.g.: /fs spell f:vi
+    e.g.: /fs spell f:Vi t:re
+    e.g.: /fs spell t:re f:VI
+
 ***Find a base***
 If you want to find a base, enter /fb *Tech.* *Form* *Level*
     e.g.: /fb Cr Me 40
