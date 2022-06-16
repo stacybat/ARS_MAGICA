@@ -1,0 +1,1 @@
+A program for parsing spells from a free book https://www.atlas-games.com/atlas-cms/resources/downloads/arm5-grand-grimoire-of-hermetic-spells.pdf. First pdf was converted to docx
