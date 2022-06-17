@@ -18,6 +18,11 @@ If you want to find a spell by the keywords with technique and/or form then type
     e.g.: /fs spell f:vi
     e.g.: /fs spell f:Vi t:re
     e.g.: /fs spell t:re f:VI
+If you want to display a description of the spell add +d
+    e.g.: /fs spell t:Re +d
+    e.g.: /fs spell +d f:vi
+    e.g.: /fs spell f:Vi +d t:re
+    e.g.: /fs pilum +d
 
 ***Find a base***
 If you want to find a base, enter /fb *Tech.* *Form* *Level*
