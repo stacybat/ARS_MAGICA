@@ -163,7 +163,7 @@ bot = commands.Bot(command_prefix='/')
 
 @bot.command()
 async def test(ctx):
-    await ctx.send('Hi')
+    await ctx.reply('Hi')
     print('Куб на старте')
 
 @bot.command()
@@ -172,7 +172,7 @@ async def s(ctx, *,arg):
     for s in bot_answer:     
         print(s)
         #Отправляем результаты бросков построчно
-        await ctx.send(s)
+        await ctx.reply(s)
 
 @bot.command()
 async def r(ctx, *,arg):
@@ -180,7 +180,7 @@ async def r(ctx, *,arg):
     for r in bot_answer:     
         print(r)
         #Отправляем результаты бросков построчно
-        await ctx.send(r)
+        await ctx.reply(r)
 
 
 bot.run(os.getenv('TOKEN'))
