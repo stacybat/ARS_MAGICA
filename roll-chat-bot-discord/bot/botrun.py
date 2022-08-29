@@ -1,188 +1,247 @@
-# Импортируем библиотеки
-import re
-import random
-
-
-def help():
-    text = '''\nСписок команд:
-            /r - simple
-            /s - stress
-            +/-N - modifier value
-            /N - number of botchs
-            N - number of rolls
-            where N - is a number
-            Commands are separated by spaces'''
-    return text
-
-# Функция симпл броска
-def simple_dice(num, mod):
-    rolls = []
-    
-    for i in range(num):
-        roll = random.randrange(1,11)
-        rolls.append('Result (mod = ' + str(mod) + '): ' + str(roll + mod) + '  Roll: ' + str(roll))
-    
-    return rolls
-
-# Функция переброса 1 при стрессовом броске
-def stress_1(rolls_stress_1):
-    roll = random.randrange(0,10)
-    rolls_stress_1.append(roll)
-    result = 1
-    mul = 1
-    #print(rolls_stress_1, mul)
-    if roll == 1:
-        stress_1(rolls_stress_1)
-
-    mul = pow(2,(len(rolls_stress_1)-1))
-    #print(mul)
-    if rolls_stress_1[-1] == 0:
-        r = 10
-    else:
-        r = rolls_stress_1[-1]
-    result = r*mul
-    
-    return result, rolls_stress_1
-
-# Функция ботч броска
-def botch_dice(botch_num):
-    botch_result = 0
-    botch_rolls = []
-    for _ in range(botch_num):
-        roll = random.randrange(0,10)
-        botch_rolls.append(roll)
-        if roll == 0:
-            botch_result +=1
-    
-    return botch_result, botch_rolls
-
-# Функция стрессового броска
-def stress_dice(num, mod, botch):
-    # Объявляем переменную stress_results, которая содержит все результаты стрессового броска
-    stress_results = [["" for j in range(3)] for i in range(num)]
-    all_results = []  
-
-    # Делаем в цикле стрессовые броски, num - количество брошенных кубов
-    for i in range(num):
-        rolls = []
-        botch_result = 0
-        roll = random.randrange(0,10)
-
-        # Определяем есть ли ботчи и взрывы
-        if roll == 0:
-            botch_result, botch_rolls = botch_dice(botch)
-            rolls.append(roll)
-        elif roll == 1:
-            rolls.append(roll)
-            result_stress, rolls = stress_1(rolls)
-        else:
-            rolls.append(roll)
-
-        # Оформляем результат и добавляем если надо модификатор
-        if roll == 0 and botch_result == 0:
-            result = roll + mod
-            stress_results[i][2] = 'No Botch'
-        elif roll == 0 and botch_result == 1:
-            result = 0
-            stress_results[i][2] = '1 Botch' + ' Botch roll: ' + str(botch_rolls)
-        elif roll == 0 and botch_result > 1:
-            result = 0
-            stress_results[i][2] = str(botch_result) + ' Botchs' + ' Botch rolls: ' + str(botch_rolls)
-        elif roll == 1:
-            result = result_stress + mod
-            stress_results[i][2] = ''
-        else:
-            result = roll + mod
-            stress_results[i][2] = ''
-        stress_results[i][0] = 'Result (mod = ' + str(mod) + '): ' + str(result)
-        stress_results[i][1] = 'Rolls: ' + str(rolls)
-        all_results.append(stress_results[i][0] + '  ' + stress_results[i][1] + '  ' + stress_results[i][2])       
-    
-    return all_results
-
-# Функция в которой отрабатывается стрессовый бросок
-
-def command_s(request):
-    request=request.lower()
-    print(request)
-
-    # разобьем команду пробелами на части
-    command = request.split()
-    dice_num = 1
-    dice_botch = 1
-    modificator = 0
-    # Присвоим переменным значение из введенной команды
-    for n in command:
-        #comm.append(n)
-        #print(type(n))
-        if  n.isdigit():
-            dice_num = int(n)
-        elif n[0] == '/' and str(n[1:]).isdigit():
-            dice_botch = int(n[1:])
-        elif (n[0] == '+' or n[0] == '-') and str(n[1:]).isdigit():
-            modificator = modificator + int(n)
-        else:
-            continue
-    # Запускаем функцию либо симпл броска либо стресс броска     
-    result = stress_dice(dice_num, modificator, dice_botch)
-    
-    return result
-
-# Функция в которой отрабатывается симпл бросок
-
-def command_r (request):
-    request=request.lower()
-    print(request)
-
-    # разобьем команду пробелами на части
-    command = request.split()
-    # Количество бросаемых кубов 1, модификатор 0
-    dice_num = 1
-    modificator = 0
-    # Присвоим переменным значение из введенной команды
-    for n in command:
-        #comm.append(n)
-        #print(type(n))
-        if  n.isdigit():
-            dice_num = int(n)
-        elif (n[0] == '+' or n[0] == '-') and str(n[1:]).isdigit():
-            modificator = modificator + int(n)
-        else:
-            continue
-    # Запускаем функцию симпл броска  
-    result = simple_dice(dice_num, modificator)
-       
-    return result
-
-
 import discord
 from discord.ext import commands
-import os
+import os, sqlite3
 
 bot = commands.Bot(command_prefix='/')
 
-@bot.command()
-async def test(ctx):
-    await ctx.reply('Hi')
-    print('Куб на старте')
+@bot.event
+async def on_ready():
+    print('ArsMagicaSpells is active')
+    global base, cur
+    base = sqlite3.connect('spells.db')
+    cur = base.cursor()
+    if base:
+        print('Data base connected')
 
 @bot.command()
-async def s(ctx, *,arg):
-    bot_answer = command_s(arg)
-    for s in bot_answer:     
-        print(s)
-        #Отправляем результаты бросков построчно
-        await ctx.reply(s)
+async def h(ctx):
+    await ctx.reply('''***Find a spell***
+If you want to find a spell by the keywords, enter /fs *search_word*
+    e.g.: /fs pilum
+If you want to find a spell by the keywords with technique and/or form then type /fs *search_word* t:*Tech.* f:*Form*
+    e.g.: /fs spell t:Re
+    e.g.: /fs spell f:vi
+    e.g.: /fs spell f:Vi t:re
+    e.g.: /fs spell t:re f:VI
+If you want to display a description of the spell add +d
+    e.g.: /fs spell t:Re +d
+    e.g.: /fs spell +d f:vi
+    e.g.: /fs spell f:Vi +d t:re
+    e.g.: /fs pilum +d
+
+***Find a base***
+If you want to find a base, enter /fb *Tech.* *Form* *Level*
+    e.g.: /fb Cr Me 40
+If you want to find a general base, you can enter level 0 or do not enter the level
+    e.g.: /fb an re 0
+    e.g.: /fb Mu Au''')
+
+
+
+
+'''@bot.command()
+async def h(ctx, *, arg):
+    #author = ctx.ctx.author
+    await ctx.reply(arg)'''
 
 @bot.command()
-async def r(ctx, *,arg):
-    bot_answer = command_r(arg)
-    for r in bot_answer:     
-        print(r)
-        #Отправляем результаты бросков построчно
-        await ctx.reply(r)
+async def fs(ctx, *, arg):
+    search_text = ''
+    search_text = " ".join(arg.split())
+    search_words = ''
+    tech = ''
+    form = ''
+    desc_flag = 0
+    result = ''
+    print(search_text)
+    for w in search_text.split():
+        if w[0:2] == 'f:' and w[2:].capitalize() in ['An', 'Aq', 'Au', 'Co', 'He', 'Ig', 'Im', 'Me', 'Te', 'Vi']:
+            form = w[2:].capitalize()
+        elif w[0:2] == 't:' and w[2:].capitalize() in ['Cr', 'In', 'Mu', 'Pe', 'Re']:
+            tech = w[2:].capitalize()
+        elif w[0:2] == '+d':
+            desc_flag = 1
+        else:
+            search_words += "%" + w        
+    search_words = search_words + "%"
+    if desc_flag == 0:
+        if len(search_words) > 1 and tech == '' and form == '':
+            request = "SELECT name_of_the_spell, '\n',  tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE '%s'"%(search_words)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE  ? ", (search_words,)).fetchall():
+                r_str = ''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)                
+                if r_str != '':
+                    flag = 0
+                    result += r_str + '\n\n'
+                
+            if flag:
+                await ctx.reply('Nothing found for your request')
+            else:
+                await ctx.reply(result)
+        elif len(search_words) > 1 and tech != '' and form == '':
+            request = "SELECT name_of_the_spell, '\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE '%s' AND tech = '%s'"%(search_words, tech)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE  ? AND tech = ?", (search_words, tech)).fetchall():
+                r_str = ''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)                
+                if r_str != '':
+                    flag = 0
+                    result += r_str + '\n\n'
+                
+            if flag:
+                await ctx.reply('Nothing found for your request')
+            else:
+                await ctx.reply(result)
+        elif len(search_words) > 1 and tech == '' and form != '':
+            request = "SELECT name_of_the_spell, '\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE '%s' AND form = '%s'"%(search_words, form)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE  ? AND form = ?", (search_words, form)).fetchall():
+                r_str = ''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)                
+                if r_str != '':
+                    flag = 0
+                    result += r_str + '\n\n'
+                
+            if flag:
+                await ctx.reply('Nothing found for your request')
+            else:
+                await ctx.reply(result)
+        elif len(search_words) > 1 and tech != '' and form != '':
+            request = "SELECT name_of_the_spell, '\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE '%s'AND tech = '%s' AND form = '%s'"%(search_words, tech, form)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source \
+                FROM Spells WHERE name_of_the_spell LIKE  ? AND tech = ? AND form = ?", (search_words, tech, form)).fetchall():
+                r_str = ''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)                
+                if r_str != '':
+                    flag = 0
+                    result += r_str + '\n\n'
+                
+            if flag:
+                await ctx.reply('Nothing found for your request')
+            else:
+                await ctx.reply(result)
+
+        else:
+            await ctx.reply('You did not enter a search term')
+    else:
+        if len(search_words) > 1 and tech == '' and form == '':
+            request = "SELECT name_of_the_spell, '\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE '%s'"%(search_words)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE  ? ", (search_words,)).fetchall():
+                r_str=''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)
+                if r_str != '':
+                    await ctx.reply(r_str)
+                    flag = 0
+            if flag:
+                await ctx.reply('Nothing found for your request')
+                
+        elif len(search_words) > 1 and tech != '' and form == '':
+            request = "SELECT name_of_the_spell, '\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE '%s' AND tech = '%s'"%(search_words, tech)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE  ? AND tech = ?", (search_words, tech)).fetchall():
+                r_str=''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)
+                if r_str != '':
+                    await ctx.reply(r_str)
+                    flag = 0
+            if flag:
+                await ctx.reply('Nothing found for your request')
+        elif len(search_words) > 1 and tech == '' and form != '':
+            request = "SELECT name_of_the_spell, '\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE '%s' AND form = '%s'"%(search_words, form)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE  ? AND form = ?", (search_words, form)).fetchall():
+                r_str=''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)
+                if r_str != '':
+                    await ctx.reply(r_str)
+                    flag = 0
+            if flag:
+                await ctx.reply('Nothing found for your request')
+        elif len(search_words) > 1 and tech != '' and form != '':
+            request = "SELECT name_of_the_spell, '\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE '%s'AND tech = '%s' AND form = '%s'"%(search_words, tech, form)
+            print(request)
+            flag = 1
+            for r in cur.execute("SELECT '***', name_of_the_spell, '***\n', tech, form, req, level, spell_range, duration, target, spell_type, base_of_spell, spell_mod, '\n', source, '\n', description \
+                FROM Spells WHERE name_of_the_spell LIKE  ? AND tech = ? AND form = ?", (search_words, tech, form)).fetchall():
+                r_str=''
+                for i in r:
+                    if len(str(i)) >0: r_str += ' ' + str(i)
+                if r_str != '':
+                    await ctx.reply(r_str)
+                    flag = 0
+            if flag:
+                await ctx.reply('Nothing found for your request')
+
+        else:
+            await ctx.reply('You did not enter a search term')
+
+            
+
+@bot.command()
+async def fb(ctx, *, arg):
+    search_base = ''
+    search_base = " ".join(arg.split())
+    level = '0'
+    tech = ''
+    form = ''
+    for i in search_base.split():
+        if i.capitalize() in ['Cr', 'In', 'Mu', 'Pe', 'Re']:
+            tech = i.capitalize()
+        elif i.capitalize() in ['An', 'Aq', 'Au', 'Co', 'He', 'Ig', 'Im', 'Me', 'Te', 'Vi']:
+            form = i.capitalize()
+        elif i.isdigit():
+            level = i
+    if tech !='' and form !='':
+        request = "SELECT Base FROM BaseTechForm WHERE Tech = \'%s\' and Form = \'%s\' and level = %s"%(tech, form, level)
+        print(request)
+        flag = 1
+        for r in cur.execute("SELECT Base FROM BaseTechForm WHERE Tech = ? and Form = ? and level = ?", (tech, form, level)).fetchall():
+            r_str=''
+            for i in r:
+                if len(str(i)) >0: r_str += ' ' + str(i)
+            if r_str != '':
+                await ctx.reply(r_str)
+                flag = 0
+        if flag:
+            await ctx.reply('Nothing found for your request')
+    else:
+        request = "SELECT Contumeliam FROM Contumeliam_csv  ORDER BY RANDOM() LIMIT 1"
+        for r in cur.execute(request).fetchall():
+            r_str=''
+            for i in r:
+                r_str += ' ' + str(i)
+            await ctx.reply(r_str)
 
 
 bot.run(os.getenv('TOKEN'))
-
-
