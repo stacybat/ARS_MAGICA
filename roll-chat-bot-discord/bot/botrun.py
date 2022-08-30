@@ -1,5 +1,4 @@
 # Импортируем библиотеки
-import re
 import random
 
 
